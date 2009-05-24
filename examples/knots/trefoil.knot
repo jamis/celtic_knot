@@ -1,0 +1,8 @@
+# trefoil knot
+a: 50 50
+b: 80 70
+c: 50 90
+
+a,b
+b,c
+c,a

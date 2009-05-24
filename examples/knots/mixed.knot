@@ -1,0 +1,22 @@
+# mixed shapes
+a: 20 80
+b: 100 80
+c: 40 60
+d: 60 60
+e: 80 60
+f: 40 40
+g: 60 40
+h: 80 40
+i: 60 20
+
+a,c
+c,d
+c,f
+d,e
+d,g
+e,h
+e,b
+f,g
+f,i
+g,h
+i,h

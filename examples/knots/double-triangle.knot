@@ -1,0 +1,11 @@
+# double-triangle
+a: 50 50
+b: 80 70
+c: 50 90
+d: 20 70
+
+a,b
+b,c
+c,a
+a,d
+c,d
