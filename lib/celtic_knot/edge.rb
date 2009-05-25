@@ -24,7 +24,7 @@ module CelticKnot
     end
 
     def finished?
-      @marked.length == 2
+      !normal? || @marked.length == 2
     end
 
     def midpoint
@@ -37,6 +37,18 @@ module CelticKnot
 
     def where_is(point)
       point.y - n1.y - (point.x - n1.x) * ((n2.y - n1.y).to_f / (n2.x - n1.x))
+    end
+
+    def normal?
+      type == ","
+    end
+
+    def ignore?
+      type == "-"
+    end
+
+    def impervious?
+      type == "="
     end
 
     def to_s

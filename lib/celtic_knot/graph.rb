@@ -110,7 +110,7 @@ module CelticKnot
       end
 
       def process_corner(knot, edge, near, far, d, perp)
-        edge2 = far.edges_without(edge).first
+        edge2 = far.real_edges_without(edge).first
         process_corner_with_edges(knot, edge, edge2, near, far, d, perp)
       end
 
@@ -120,6 +120,8 @@ module CelticKnot
       end
 
       def process_corner_with_edges(knot, edge, edge2, near, far, d, perp)
+        return process_deadend(knot, edge, near, far, d, perp) if edge2.nil?
+
         far2 = edge2.other(far)
         d2 = far.direction_to(far2)
         perp2 = d2.cross_right
@@ -147,7 +149,7 @@ module CelticKnot
           knot.add(edge, over.controls, true)
           knot.add(edge2, under.controls, false)
         else
-          meetup = far + direction
+          meetup = far + direction * 0.5
 
           l1 = (far - edge.midpoint).length / 2
           l2 = (far - edge2.midpoint).length / 2

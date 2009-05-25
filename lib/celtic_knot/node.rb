@@ -9,8 +9,12 @@ module CelticKnot
       @edges = []
     end
 
-    def edges_without(edge)
-      edges.reject { |e| e == edge }
+    def real_edges_without(edge)
+      real_edges.reject { |e| e == edge }
+    end
+
+    def real_edges
+      @real_edges ||= edges.reject { |e| e.ignore? }
     end
 
     def nearest_edge_to(edge)
@@ -19,7 +23,7 @@ module CelticKnot
 
       vector = edge.other(self).direction_to(self)
 
-      list = edges_without(edge)
+      list = real_edges_without(edge)
       list.each do |e2|
         vector2 = self.direction_to(e2.other(self))
         angle = vector.angle(vector2)
