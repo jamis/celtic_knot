@@ -24,7 +24,7 @@ module CelticKnot
     end
 
     def finished?
-      !normal? || @marked.length == 2
+      ignore? || @marked.length == 2
     end
 
     def midpoint

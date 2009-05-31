@@ -1,17 +1,21 @@
-CelticKnot
-==========
+= CelticKnot
 
 CelticKnot is a library for generating celtic knots from graphs. The technique used is the one described by Christian Mercat[1], in which graphs are used as a kind of scaffolding for building celtic knots.
 
-Caveats
--------
+== Features
+
+* Arbitrarily complex graphs as input
+* Input graphs may specify walls[2] on edges
+
+== Caveats
 
 There are a lot of caveats in the current version of the code. The knot2svg example, which takes a simple graph definition as input and writes the resulting knot as an SVG file, currently uses an imperfect hack to render the cables with stroked borders; this hack results in gaps and "cracks" in the cables.
 
 The algorithm itself has issues when the cables make tight bends, or when the cables are too thick for the space available.
 
-TODO
-----
+Also, see examples/knots/mixed.knot to see what happens when the midpoint of a curve is blindly computed: you wind up with an curve segment that is too long and inadvertantly overlaps another segment.
+
+== TODO
 
 Aside from fixing the multitude of bugs, I'd like to see the following features added eventually:
 
@@ -20,8 +24,7 @@ Aside from fixing the multitude of bugs, I'd like to see the following features 
 * Flourishes
 * Encapsulated knots (e.g., fill some arbitrary shape with knotwork)
 
-License
--------
+== License
 
 CelticKnot is written by Jamis Buck (jamis@jamisbuck.org). The author hereby places this library into the public domain.
 

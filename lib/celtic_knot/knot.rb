@@ -7,10 +7,15 @@ module CelticKnot
 
     def initialize
       @curves = []
+      @marks = {}
     end
 
     def add(edge, points, over)
       curves << KnotBezier.new(points, over)
+    end
+
+    def mark(id, point)
+      @marks[id] = point
     end
 
     def to_svg(options={})
@@ -32,6 +37,10 @@ module CelticKnot
       curves.select { |c| c.over }.each do |curve|
         svg << curve.to_svg(stroke_opts) << "\n"
         svg << curve.to_svg(fill_opts) << "\n"
+      end
+
+      @marks.each do |id, pt|
+        svg << '<circle cx="%f" cy="%f" r="1" fill="red" stroke="red" id="%s" />' % [pt.x, pt.y, id]
       end
 
       svg << "</g>\n"

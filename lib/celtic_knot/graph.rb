@@ -126,40 +126,64 @@ module CelticKnot
         d2 = far.direction_to(far2)
         perp2 = d2.cross_right
 
-        if d == d2 # the two edges are colinear
-          direction = perp * (far - edge.midpoint).length
+        triangle = Triangle.new(near, far, far2) if d != d2 # the two edges are not colinear
+
+        # midpoints, mid1 == edge1 midpoint, mid2 == edge2 midpoint
+        # for impervious edges, the midpoints lie offset from the edges. Otherwise, the
+        # midpoints lie on the midpoints themselves.
+
+        if edge.impervious?
+          mid1 = edge.midpoint + d.cross_right * 5 # FIXME: don't hard-code the cable width
+          outgoing_vector = d
         else
-          triangle = Triangle.new(near, far, far2)
-          direction = far - triangle.centroid
+          mid1 = edge.midpoint
+          outgoing_vector = d.between(perp).normalize
         end
 
-        outgoing_vector = d.between(perp).normalize
-        incoming_vector = d2.between(perp2).normalize.cross_right
+        if edge2.impervious?
+          mid2 = edge2.midpoint + d2.cross_right * 5 # FIXME: don't hard-code the cable width
+          incoming_vector = d2.inverse
+        else
+          mid2 = edge2.midpoint
+          incoming_vector = d2.between(perp2).normalize.cross_right
+        end
 
-        if triangle && triangle.contains?(edge.midpoint + perp*0.01)
-          # where do the vectors intersect?
-          l1 = Line.new(edge.midpoint, edge.midpoint + outgoing_vector)
-          l2 = Line.new(edge2.midpoint, edge2.midpoint + incoming_vector)
+        if triangle && triangle.contains?(mid1 + outgoing_vector*0.01)
+          # we're crossing a concave angle
+          l1 = Line.new(mid1, mid1 + outgoing_vector)
+          l2 = Line.new(mid2, mid2 + incoming_vector)
 
-          pmid = l1.intersect(l2) || (edge.midpoint + edge2.midpoint) / 2
+          pmid = l1.intersect(l2) || mid1.between(mid2)
 
-          curve = Bezier.new([edge.midpoint, pmid, pmid, edge2.midpoint])
+          curve = Bezier.new([mid1, pmid, pmid, mid2])
           over, under = curve.split(0.5)
 
           knot.add(edge, over.controls, true)
           knot.add(edge2, under.controls, false)
         else
-          meetup = far + direction * 0.5
+          # we're crossing a convex angle (outer corner)
+          base = mid1.between(mid2) # point between midpoints
 
-          l1 = (far - edge.midpoint).length / 2
-          l2 = (far - edge2.midpoint).length / 2
+          # distance between actual midpoints
+          # FIXME: this should probably be a function of the angle between the edges, where
+          # a small angle means a large distance (to go around a sharp corner), and a large
+          # angle means a small distance.
+          if d == d2
+            distance = 5
+          else
+            distance = (edge.midpoint - edge2.midpoint).length
+          end
 
-          points = [edge.midpoint, edge.midpoint + outgoing_vector * l1,
-            meetup + direction.cross_right.normalize * l1, meetup]
+          e2e = mid1.direction_to(mid2).normalize
+          meetup = base + e2e.cross_right * distance
+          direction = base.direction_to(meetup)
+
+          points = [mid1, mid1 + outgoing_vector * distance * 0.5,
+            meetup + direction.cross_right.normalize * distance * 0.5, meetup]
           knot.add(edge, points, true)
           
-          points = [meetup, meetup + direction.cross_left.normalize * l2,
-            edge2.midpoint + incoming_vector * l2, edge2.midpoint]
+          points = [meetup, meetup + direction.cross_left.normalize * distance * 0.5,
+            mid2 + incoming_vector * distance * 0.5, mid2]
           knot.add(edge2, points, false)
         end
 

@@ -1,0 +1,10 @@
+# single box, with impervious top edge
+a: 50 50
+b: 70 50
+c: 70 70
+d: 50 70
+
+a=b
+a,d
+b,c
+c,d
