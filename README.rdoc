@@ -19,7 +19,6 @@ Also, see examples/knots/mixed.knot to see what happens when the midpoint of a c
 
 Aside from fixing the multitude of bugs, I'd like to see the following features added eventually:
 
-* Walls[2] in the input graph
 * Shaped corners (e.g. pointed corners, or blunt, etc.)
 * Flourishes
 * Encapsulated knots (e.g., fill some arbitrary shape with knotwork)
