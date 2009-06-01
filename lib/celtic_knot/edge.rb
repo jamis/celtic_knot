@@ -24,11 +24,38 @@ module CelticKnot
     end
 
     def finished?
-      ignore? || @marked.length == 2
+      @marked.length == 2
     end
 
     def midpoint
       @midpoint ||= n1 + (n2 - n1)/2.0
+    end
+
+    def virtual_midpoint(from, mode)
+      if normal?
+        return midpoint
+      elsif impervious?
+        direction = from.direction_to(midpoint)
+        return midpoint + direction.cross_right * 5 # FIXME: don't hard-code the cable width
+      elsif ignore?
+        direction = from.direction_to(midpoint)
+        distance = (midpoint - from).length
+        offset = (mode == :incoming ? -3 : 3) # FIXME: don't hardcode the cable width
+        return from + direction * (distance + offset)
+      end
+    end
+
+    def vector(direction, mode)
+      if normal?
+        result = direction.between(direction.cross_right).normalize
+        result = result.cross_right if mode == :incoming
+      elsif impervious?
+        result = mode == :outgoing ? direction : direction.inverse
+      elsif ignore?
+        result = direction.cross_right
+      end
+
+      return result
     end
 
     def other(node)

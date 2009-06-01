@@ -120,7 +120,7 @@ module CelticKnot
       end
 
       def process_corner(knot, edge, near, far, d, perp)
-        edge2 = far.real_edges_without(edge).first
+        edge2 = far.edges_without(edge).first
         process_corner_with_edges(knot, edge, edge2, near, far, d, perp)
       end
 
@@ -138,25 +138,11 @@ module CelticKnot
 
         triangle = Triangle.new(near, far, far2) if d != d2 # the two edges are not colinear
 
-        # midpoints, mid1 == edge1 midpoint, mid2 == edge2 midpoint
-        # for impervious edges, the midpoints lie offset from the edges. Otherwise, the
-        # midpoints lie on the midpoints themselves.
+        mid1 = edge.virtual_midpoint(near, :outgoing)
+        mid2 = edge2.virtual_midpoint(far, :incoming)
 
-        if edge.impervious?
-          mid1 = edge.midpoint + d.cross_right * 5 # FIXME: don't hard-code the cable width
-          outgoing_vector = d
-        else
-          mid1 = edge.midpoint
-          outgoing_vector = d.between(perp).normalize
-        end
-
-        if edge2.impervious?
-          mid2 = edge2.midpoint + d2.cross_right * 5 # FIXME: don't hard-code the cable width
-          incoming_vector = d2.inverse
-        else
-          mid2 = edge2.midpoint
-          incoming_vector = d2.between(perp2).normalize.cross_right
-        end
+        outgoing_vector = edge.vector(d, :outgoing)
+        incoming_vector = edge2.vector(d2, :incoming)
 
         if triangle && triangle.contains?(mid1 + outgoing_vector*0.01)
           # we're crossing a concave angle
