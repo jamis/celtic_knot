@@ -1,3 +1,5 @@
+require 'strscan'
+
 require 'celtic_knot/bezier'
 require 'celtic_knot/edge'
 require 'celtic_knot/knot'
@@ -19,13 +21,21 @@ module CelticKnot
           x = $2.to_f
           y = $3.to_f
           nodes[name] = Node.new(x,y)
-        elsif line =~ /^\s*(\w+)\s*(\S)\s*(\w+)\s*$/
-          p1 = nodes[$1.downcase] or abort "unknown point #{$1}"
-          type = $2
-          p2 = nodes[$3.downcase] or abort "unknown point #{$2}"
-          Edge.new(p1, p2, type)
         else
-          raise "can't parse: #{line.inspect}"
+          scanner = StringScanner.new(line.strip)
+          near = scanner.scan(/\w+/) or abort "expected node id on #{line.inspect}"
+          p1 = nodes[near.downcase] or abort "unknown point #{near.inspect}"
+
+          loop do
+            scanner.skip(/\s*/)
+            break if scanner.eos?
+            type = scanner.scan(/[-,=]/) or abort "expected edge type on #{line.inspect}"
+            scanner.skip(/\s*/)
+            far = scanner.scan(/\w+/) or abort "expected node id on #{line.inspect}"
+            p2 = nodes[far.downcase] or abort "unknown point #{far.inspect}"
+            Edge.new(p1, p2, type)
+            p1 = p2
+          end
         end
       end
 
