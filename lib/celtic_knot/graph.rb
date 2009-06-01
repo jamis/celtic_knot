@@ -160,15 +160,15 @@ module CelticKnot
           # we're crossing a convex angle (outer corner)
           base = mid1.between(mid2) # point between midpoints
 
-          # distance between actual midpoints
-          # FIXME: this should probably be a function of the angle between the edges, where
-          # a small angle means a large distance (to go around a sharp corner), and a large
-          # angle means a small distance.
-          if d == d2
-            distance = 5
-          else
-            distance = (edge.midpoint - edge2.midpoint).length
-          end
+          # distance from the base to where the two curve segments will meet
+          # FIXME: for best results, this should probably take into account the tangents
+          # at each midpoint; otherwise, loops that circle a single node (due to ignored
+          # edges) will be very flat on one side.
+
+          midpoint_separation = (mid1 - mid2).length
+          max_separation = (far - mid1).length + (mid2 - far).length
+          ratio = (midpoint_separation / max_separation) ** 2
+          distance = (max_separation - 5) * (1 - ratio) + 5 # FIXME: don't hard-code cable width
 
           e2e = mid1.direction_to(mid2).normalize
           meetup = base + e2e.cross_right * distance
