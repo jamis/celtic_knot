@@ -67,7 +67,7 @@ puts "thread ------>"
             # from the given starting node, and travelling in the given direction
             # around the far node.
 
-            @midpoint = @edge.virtual_midpoint(@node, @direction, :exit)
+            @midpoint = @edge.virtual_midpoint(@node, @direction, :start)
 
             return continue_thread
           end
@@ -95,7 +95,6 @@ puts "   vector:     %s" % vector
 puts "   midpoint:   %s" % @midpoint
 puts "   direction:  %s" % @direction
 puts "   difference: %f" % difference
-
         @thread.add_connection(@midpoint, vector, 4.5 * difference)
 
         @edge.mark(@node, @direction)

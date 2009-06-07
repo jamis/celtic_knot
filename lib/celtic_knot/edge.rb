@@ -174,12 +174,17 @@ module CelticKnot
     # This will be a point offset some distance from the natural midpoint,
     # colinear with the edge. In this case, the direction parameter is
     # ignored, and the midpoint returned will always be the one nearest the
-    # reference node if phase is :enter, and the furthest if phase is :exit.
+    # reference node if phase is :enter, and the furthest if phase is :start.
     def virtual_midpoint(reference, direction, phase)
-      direction = midpoint - reference
-      distance = length/3
-      offset = phase == :enter ? -1 : 1 # FIXME: don't hardcode the cable width
-      return reference + direction.normalize * (distance + offset)
+      direction = (midpoint - reference).normalize
+
+      if phase == :start
+        return reference + direction * 0.75 * length
+      elsif phase == :enter
+        return reference + direction * 0.25 * length
+      else
+        raise ArgumentError, "unknown phase: #{phase.inspect}"
+      end
     end
 
     def vector(parallel, direction)
