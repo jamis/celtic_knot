@@ -1,21 +1,17 @@
-require 'celtic_knot/knot_bezier'
-require 'celtic_knot/path'
+require 'celtic_knot/thread'
 
 module CelticKnot
   class Knot
-    attr_reader :curves
+    attr_reader :threads
 
     def initialize
-      @curves = []
-      @marks = {}
+      @threads = []
     end
 
-    def add(edge, points, over)
-      curves << KnotBezier.new(points, over)
-    end
-
-    def mark(id, point)
-      @marks[id] = point
+    def new_thread
+      thread = Thread.new
+      @threads << thread
+      return thread
     end
 
     def to_svg(options={})

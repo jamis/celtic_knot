@@ -1,11 +1,7 @@
 require 'strscan'
 
-require 'celtic_knot/bezier'
 require 'celtic_knot/edge'
-require 'celtic_knot/knot'
-require 'celtic_knot/line'
 require 'celtic_knot/node'
-require 'celtic_knot/triangle'
 
 module CelticKnot
   class Graph
@@ -33,7 +29,7 @@ module CelticKnot
             scanner.skip(/\s*/)
             far = scanner.scan(/\w+/) or abort "expected node id on #{line.inspect}"
             p2 = nodes[far.downcase] or abort "unknown point #{far.inspect}"
-            Edge.new(p1, p2, type)
+            Edge.class_for(type).new(p1, p2)
             p1 = p2
           end
         end
@@ -51,38 +47,15 @@ module CelticKnot
     def construct_knot
       knot = Knot.new
 
-      near = nodes.first
-      edge = near.edges.first
-      far = edge.other(near)
-      pass = 0
-
-      loop do
-        if edge.finished?
-          near = nodes.detect { |n| n.edges.any? { |e| !e.finished? } }
-          break unless near
-          edge = near.edges.detect { |e| !e.finished? }
-          far = edge.other(near)
-          pass = 0
-        end
-
-        if edge.marked?(near)
-          far, near = near, edge.other(near)
-        end
-
-        edge.mark(near)
-
-        d = near.direction_to(far)
-        perp = d.cross_right
-
-        if far.edges.length == 1
-          near, edge = process_deadend(knot, edge, near, far, d, perp)
-        elsif far.edges.length == 2
-          near, edge = process_corner(knot, edge, near, far, d, perp)
+      nodes.each do |node|
+        if node.edges.empty?
+          encircle_node(knot, node)
         else
-          near, edge = process_intersection(knot, edge, near, far, d, perp)
+          node.edges.each do |edge|
+            next if edge.marked?(node, Direction::CCW)
+            plot_thread(knot, node, edge)
+          end
         end
-
-        far = edge.other(near)
       end
 
       return knot
@@ -100,90 +73,57 @@ module CelticKnot
 
     private
 
-      def process_deadend(knot, edge, near, far, d, perp)
-        lperp = perp.inverse
-        direction = far - edge.midpoint
-        distance = direction.length
-        curve_mid = far + direction
-
-        outgoing_vector = d.between(perp).normalize
-
-        points = [edge.midpoint, edge.midpoint + outgoing_vector * distance, curve_mid + perp * distance, curve_mid]
-        knot.add(edge, points, true)
-
-        incoming_vector = d.between(lperp).normalize
-
-        points = [curve_mid, curve_mid + lperp * distance, edge.midpoint + incoming_vector * distance, edge.midpoint]
-        knot.add(edge, points, false)
-
-        return [near, edge]
+      def encircle_node(knot, node)
+        # trivial case for a node with no edges. just draw a circle around it.
+        raise NotImplementedError
       end
 
-      def process_corner(knot, edge, near, far, d, perp)
-        edge2 = far.edges_without(edge).first
-        process_corner_with_edges(knot, edge, edge2, near, far, d, perp)
-      end
+      def plot_thread(knot, near, edge)
+        thread = knot.new_thread
 
-      def process_intersection(knot, edge, near, far, d, perp)
-        edge2 = far.nearest_edge_to(edge)
-        process_corner_with_edges(knot, edge, edge2, near, far, d, perp)
-      end
+        # direction is either "clockwise" or "counter-clockwise",
+        # and refers to the direction the cable would travel if it were to
+        # orbit the far node, originating at the midpoint of the current
+        # edge.
 
-      def process_corner_with_edges(knot, edge, edge2, near, far, d, perp)
-        return process_deadend(knot, edge, near, far, d, perp) if edge2.nil?
+        direction = Direction::CCW
 
-        far2 = edge2.other(far)
-        d2 = far.direction_to(far2)
-        perp2 = d2.cross_right
+        # mid1 is the "virtual" midpoint of the current edge, as viewed
+        # from the given starting node, and travelling in the given direction
+        # around the far node.
 
-        triangle = Triangle.new(near, far, far2) if d != d2 # the two edges are not colinear
+        mid1 = edge.virtual_midpoint(near, direction, :exit)
 
-        mid1 = edge.virtual_midpoint(near, :outgoing)
-        mid2 = edge2.virtual_midpoint(far, :incoming)
+n = 0
+        loop do
+          far = edge.other(near)
+          parallel = far - near
+          vector = edge.vector(parallel, direction)
 
-        outgoing_vector = edge.vector(d, :outgoing)
-        incoming_vector = edge2.vector(d2, :incoming)
+          break if thread.closes?(mid1, vector)
 
-        if triangle && triangle.contains?(mid1 + outgoing_vector*0.01)
-          # we're crossing a concave angle
-          l1 = Line.new(mid1, mid1 + outgoing_vector)
-          l2 = Line.new(mid2, mid2 + incoming_vector)
+n += 1
+puts "%d: %s %s | %s %s | %s %s" % [n, near, edge, mid1, vector, parallel, direction]
+          thread.add_connection(mid1, vector)
 
-          pmid = l1.intersect(l2) || mid1.between(mid2)
+          edge.mark(near, direction)
 
-          curve = Bezier.new([mid1, pmid, pmid, mid2])
-          over, under = curve.split(0.5)
+          edge2 = far.nearest_edge_to(edge, direction) || edge
+          mid2 = edge2.virtual_midpoint(far, direction, :enter)
 
-          knot.add(edge, over.controls, true)
-          knot.add(edge2, under.controls, false)
-        else
-          # we're crossing a convex angle (outer corner)
-          base = mid1.between(mid2) # point between midpoints
+          # if the edge is being ignored, then we reverse direction,
+          # keeping all else the same. This has the effect of just
+          # passing through the edge.
 
-          # distance from the base to where the two curve segments will meet
-          # FIXME: for best results, this should probably take into account the tangents
-          # at each midpoint; otherwise, loops that circle a single node (due to ignored
-          # edges) will be very flat on one side.
+          if edge2.ignore?
+            near = edge2.other(far)
+          else
+            near = far
+            direction = direction.opposite if edge2.normal?
+          end
 
-          midpoint_separation = (mid1 - mid2).length
-          max_separation = (far - mid1).length + (mid2 - far).length
-          ratio = (midpoint_separation / max_separation) ** 2
-          distance = (max_separation - 5) * (1 - ratio) + 5 # FIXME: don't hard-code cable width
-
-          e2e = mid1.direction_to(mid2).normalize
-          meetup = base + e2e.cross_right * distance
-          direction = base.direction_to(meetup)
-
-          points = [mid1, mid1 + outgoing_vector * distance * 0.5,
-            meetup + direction.cross_right.normalize * distance * 0.5, meetup]
-          knot.add(edge, points, true)
-          
-          points = [meetup, meetup + direction.cross_left.normalize * distance * 0.5,
-            mid2 + incoming_vector * distance * 0.5, mid2]
-          knot.add(edge2, points, false)
+          edge, mid1 = edge2, mid2
         end
-
-        return [far, edge2]
       end
   end
 end
