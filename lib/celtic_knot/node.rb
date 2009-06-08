@@ -40,10 +40,5 @@ module CelticKnot
       nearest = 0 if nearest >= edges.length
       return edges[nearest]
     end
-
-    def to_svg(options={})
-      color = options[:color] || "black"
-      '<circle cx="%f" cy="%f" r="1" fill="%s" stroke="%s" />' % [x, y, color, color]
-    end
   end
 end

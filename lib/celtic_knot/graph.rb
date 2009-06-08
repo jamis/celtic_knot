@@ -61,16 +61,6 @@ module CelticKnot
       return knot
     end
 
-    def to_svg(options={})
-      svg = "<g>\n"
-
-      edges = nodes.map { |node| node.edges }.flatten.uniq
-      edges.each { |edge| svg << edge.to_svg(options) << "\n" }
-      nodes.each { |node| svg << node.to_svg(options) << "\n" }
-
-      svg << "</g>\n"
-    end
-
     private
 
       def encircle_node(knot, node)
@@ -94,7 +84,6 @@ module CelticKnot
 
         mid1 = edge.virtual_midpoint(near, direction, :exit)
 
-n = 0
         loop do
           far = edge.other(near)
           parallel = far - near
@@ -102,8 +91,6 @@ n = 0
 
           break if thread.closes?(mid1, vector)
 
-n += 1
-puts "%d: %s %s | %s %s | %s %s" % [n, near, edge, mid1, vector, parallel, direction]
           thread.add_connection(mid1, vector)
 
           edge.mark(near, direction)

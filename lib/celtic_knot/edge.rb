@@ -78,19 +78,6 @@ module CelticKnot
       false
     end
 
-    def to_svg(options={})
-      color = options[:color] || "black"
-
-      width = impervious? ? 2 : 1
-      dasharray = ignore? ? "3,3" : "none"
-
-      svg = '<path d="'
-      svg << "M #{n1.x} #{n1.y} L #{n2.x} #{n2.y}"
-      svg << '" '
-      svg << 'stroke="%s" fill="none" stroke-width="%s" stroke-dasharray="%s"' % [color, width, dasharray]
-      svg << " />"
-    end
-
     private
 
       def mark_near(point, direction)

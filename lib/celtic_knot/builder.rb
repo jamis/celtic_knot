@@ -70,7 +70,6 @@ module CelticKnot
             next_edge
 
           else
-puts "thread ------>"
             @thread = knot.new_thread
             @step = 0
 
@@ -109,13 +108,6 @@ puts "thread ------>"
         difference = @edge.difference(far_edge, @direction)
         difference = 1.0 if difference == 0.0
 
-puts "%d: %s %s" % [@step, @node, @edge]
-puts "   far edge:   %s" % far_edge
-puts "   parallel:   %s" % parallel
-puts "   vector:     %s" % vector
-puts "   midpoint:   %s" % @midpoint
-puts "   direction:  %s" % @direction
-puts "   difference: %f" % difference
         @thread.add_connection(@midpoint, vector, 4.5 * difference, @edge.normal?)
 
         @edge.mark(@node, @direction)
