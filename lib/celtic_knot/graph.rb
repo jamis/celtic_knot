@@ -2,6 +2,7 @@ require 'strscan'
 
 require 'celtic_knot/edge'
 require 'celtic_knot/node'
+require 'celtic_knot/knot'
 
 module CelticKnot
   class Graph
@@ -42,6 +43,10 @@ module CelticKnot
 
     def initialize(nodes)
       @nodes = nodes
+    end
+
+    def build_knot
+      Knot.new(self)
     end
   end
 end
