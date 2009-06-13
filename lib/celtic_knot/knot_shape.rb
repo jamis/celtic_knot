@@ -94,11 +94,6 @@ module CelticKnot
               normal = c[:curve].tangent(t).rotate_ccw.normalize
               offset = normal * half_width
 
-              from_z = c[:offset].to_f
-              to_z = c[:next][:offset].to_f
-
-              z = from_z + (to_z - from_z) * t
-
               segment.left << point + offset
               segment.right << point - offset
             end
