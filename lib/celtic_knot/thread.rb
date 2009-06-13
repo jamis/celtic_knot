@@ -22,7 +22,6 @@ module CelticKnot
     def add_connection(point, vector, magnitude, intersection)
       connection = { :at           => point,
                      :vector       => vector,
-                     :vnorm        => vector.normalize,
                      :magnitude    => magnitude,
                      :thread       => self,
                      :intersection => intersection }
@@ -44,7 +43,7 @@ module CelticKnot
     end
 
     def closes?(point, vector)
-      head && head[:at] == point && head[:vnorm] == vector.normalize
+      head && head[:at] == point && head[:vector] == vector.normalize
     end
   end
 end

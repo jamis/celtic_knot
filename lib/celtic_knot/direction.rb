@@ -1,7 +1,6 @@
 module CelticKnot
   class Direction
     attr_accessor :opposite
-    attr_reader :description
 
     def initialize(clockwise)
       @clockwise = clockwise
