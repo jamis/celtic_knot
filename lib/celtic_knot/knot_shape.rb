@@ -164,14 +164,24 @@ module CelticKnot
         until found_left && found_right
           unless found_left
             lp2 = segment.left.send(operation)
-            lline = Curves::LineSegment.new(lp1, lp2)
+            if lp2.nil?
+              found_left = :fail
+            else
+              lline = Curves::LineSegment.new(lp1, lp2)
+            end
           end
 
           unless found_right
             rp2 = segment.right.send(operation)
-            rline = Curves::LineSegment.new(rp1, rp2)
+            if rp2.nil?
+              found_right = :fail
+            else
+              rline = Curves::LineSegment.new(rp1, rp2)
+            end
           end
-          
+
+          break if found_left && found_right
+
           p3 = boundary[0]
           1.upto(boundary.length-1) do |j|
             p4 = boundary[j]
@@ -195,6 +205,8 @@ module CelticKnot
 
           lp1, rp1 = lp2, rp2
         end
+
+        return if found_left == :fail || found_right == :fail
 
         if found_left < found_right
           lo, hi = found_left, found_right
