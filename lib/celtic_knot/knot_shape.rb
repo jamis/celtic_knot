@@ -73,13 +73,20 @@ module CelticKnot
           # curve doubles back on itself). If such a self-intersection
           # exists, remove the intersection by reducing all lines between
           # the intersection to the point of intersection.
+          #
+          # intersections near the beginning or end of the list are ignored,
+          # since they represent overlaps caused by a segment that intersects
+          # itself at the same midpoint (e.g. a loop around a single node).
+          # such intersections will be taken care of when the over/under
+          # intersections are subtracted later in the process.
           def cull_overlap_for_list(list)
-            i = 0
+            offset = list.length/4
+            i = offset
             while i < list.length-2
               line1 = Curves::LineSegment.new(list[i], list[i+1])
 
               j = i+1
-              while j < list.length-1
+              while j < list.length-offset
                 line2 = Curves::LineSegment.new(list[j], list[j+1])
 
                 if (intersection = line1.intersection(line2))
@@ -153,6 +160,7 @@ module CelticKnot
       end
 
       def subtract_intersection_between(segment, boundary, from)
+
         operation = from == :start ? :shift : :pop
         reverseop = from == :start ? :unshift : :push
 
