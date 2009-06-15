@@ -80,9 +80,9 @@ module CelticKnot
           # such intersections will be taken care of when the over/under
           # intersections are subtracted later in the process.
           def cull_overlap_for_list(list)
-            offset = list.length/4
+            offset = list.length/10
             i = offset
-            while i < list.length-2
+            while i < list.length-offset-1
               line1 = Curves::LineSegment.new(list[i], list[i+1])
 
               j = i+1
