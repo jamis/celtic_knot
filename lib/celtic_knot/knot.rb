@@ -67,14 +67,13 @@ module CelticKnot
           far_midpoint = far_edge.virtual_midpoint(far, direction, :enter)
 
           if far_edge == edge
-            difference = 1.0
+            arc = 1.0
           else
-            difference = edge.difference(far_edge, direction)
-            difference = 1.0 if difference == 0.0
+            arc = edge.difference(far_edge, direction)
+            arc = 1.0 if arc == 0.0
           end
 
-          distance = ((far - midpoint).length + (far - far_midpoint).length)
-          magnitude = Math::PI * distance * difference
+          distance = (far - midpoint).length + (far - far_midpoint).length
 
           if $DEBUG
             puts "%d: %s %s" % [step, node, edge]
@@ -83,12 +82,13 @@ module CelticKnot
             puts "   vector:     %s" % vector
             puts "   midpoint:   %s" % midpoint
             puts "   direction:  %s" % direction
-            puts "   difference: %f" % difference
-            puts "   distance:   %f" % distance
-            puts "   magnitude:  %f" % magnitude
+            puts "   arc:        %f" % arc
           end
 
-          thread.add_connection(midpoint, vector.normalize, magnitude, edge.normal?)
+          thread.add_connection(:at => midpoint, :vector => vector.normalize,
+            :arc => arc,
+            :weight => Math::PI * arc * distance, :intersection => edge.normal?)
+
           edge.mark(node, direction)
 
           edge, midpoint = far_edge, far_midpoint
@@ -115,10 +115,22 @@ module CelticKnot
         loop do
           far = near[:next]
 
-          near[:curve] = Curves::Hermite.new([near[:at], near[:vector] * near[:magnitude], far[:at], far[:vector] * near[:magnitude]])
+          near_vector = best_vector_for(near) * near[:weight]
+          far_vector  = best_vector_for(far) * near[:weight]
+
+          near[:curve] = Curves::Hermite.new([near[:at], near_vector, far[:at], far_vector])
 
           near = far
           break if near == thread.head
+        end
+      end
+
+      def best_vector_for(connection)
+        connection[:best_vector] ||= begin
+          prev_at = connection[:prev][:arc] >= 0.5 ? connection[:at] : connection[:prev][:at]
+          next_at = connection[:arc] >= 0.5 ? connection[:at] : connection[:next][:at]
+
+          next_at == prev_at ? connection[:vector] : (next_at - prev_at).normalize
         end
       end
 

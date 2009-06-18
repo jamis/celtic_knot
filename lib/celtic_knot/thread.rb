@@ -19,14 +19,9 @@ module CelticKnot
       self
     end
 
-    def add_connection(point, vector, magnitude, intersection)
-      connection = { :at           => point,
-                     :vector       => vector,
-                     :magnitude    => magnitude,
-                     :thread       => self,
-                     :intersection => intersection }
-
-      knot.overlaps[point] << connection
+    def add_connection(data)
+      connection = data.merge(:thread => self)
+      knot.overlaps[connection[:at]] << connection
 
       @head ||= connection
       @tail ||= connection
