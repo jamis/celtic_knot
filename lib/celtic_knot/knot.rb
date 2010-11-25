@@ -3,8 +3,19 @@ require 'celtic_knot/direction'
 require 'celtic_knot/knot_shape'
 require 'curves/hermite'
 
+require 'benchmark'
+
 module CelticKnot
   class Knot
+    # threads that span angles more than 210 degrees will, when split
+    # at their apex, be sufficiently far from the node to look
+    # okay. This is because 210 degrees gives the apex a distance from
+    # the pivot node equal to half the distance from the pivot node to
+    # the edge midpoints, which is also how far (on average) the pivot
+    # node is from the midpoint of the line between the two edge
+    # midpoints.
+    OBTUSE_THRESHOLD = 0.583 # 58.3% of 360 degrees == 210 degrees
+
     attr_reader :graph
     attr_reader :threads
     attr_reader :overlaps
@@ -19,15 +30,22 @@ module CelticKnot
     end
 
     def draw(draw_options={})
-      KnotShape.new(self, options.merge(draw_options))
+      time("draw") { KnotShape.new(self, options.merge(draw_options)) }
     end
 
     private
 
+      def time(operation)
+        result = nil
+        duration = Benchmark.realtime { result = yield }
+        puts "[%s] %.2gs" % [operation, duration]
+        return result
+      end
+
       def generate!
-        compute_crossings
-        compute_overlaps
-        define_threads
+        time("compute_crossings") { compute_crossings }
+        time("compute_overlaps")  { compute_overlaps }
+        time("define_threads")    { define_threads }
         # smooth_threads
       end
 
@@ -52,11 +70,7 @@ module CelticKnot
         direction = Direction::CCW
         midpoint = edge.virtual_midpoint(node, direction, :start)
 
-        step = 0
-
         loop do
-          step += 1
-
           far = edge.other(node)
           parallel = far - node
           vector = edge.vector(parallel, direction)
@@ -75,19 +89,32 @@ module CelticKnot
 
           distance = (far - midpoint).length + (far - far_midpoint).length
 
-          if $DEBUG
-            puts "%d: %s %s" % [step, node, edge]
-            puts "   far edge:   %s" % far_edge
-            puts "   parallel:   %s" % parallel
-            puts "   vector:     %s" % vector
-            puts "   midpoint:   %s" % midpoint
-            puts "   direction:  %s" % direction
-            puts "   arc:        %f" % arc
-          end
+          if obtuse?(arc)
+            # split into two thread segments
+            nadir = midpoint + ((far_midpoint - midpoint) / 2)
+            horizon_vector = far - nadir
 
-          thread.add_connection(:at => midpoint, :vector => vector.normalize,
-            :arc => arc,
-            :weight => Math::PI * arc * distance, :intersection => edge.normal?)
+            # FIXME FIXME
+            # distance of apex from nadir needs to be a function of arc, and the
+            # connection weight needs to be a function of something more sophisticated
+            # than just the circumference of a circle...maybe include horizon_vector?
+
+            apex = nadir + horizon_vector * 1.5
+            thread.add_connection(:at => midpoint, :vector => vector.normalize,
+              :arc => arc/2, :weight => Math::PI * arc/4 * distance,
+              :intersection => edge.normal?)
+
+            apex_direction = horizon_vector.rotate_cw.normalize
+            apex_direction = apex_direction.inverse if apex_direction.dot(vector) < 0
+
+            thread.add_connection(:at => apex, :vector => apex_direction,
+              :arc => arc/2, :weight => Math::PI * arc/4 * distance, :intersection => false)
+          else
+            # create a single thread segment between the two midpoints
+            thread.add_connection(:at => midpoint, :vector => vector.normalize,
+              :arc => arc,
+              :weight => Math::PI * arc * distance, :intersection => edge.normal?)
+          end
 
           edge.mark(node, direction)
 
@@ -158,6 +185,10 @@ module CelticKnot
           c = c[:next]
           break if c.object_id == start.object_id
         end
+      end
+
+      def obtuse?(arc)
+        arc > OBTUSE_THRESHOLD
       end
   end
 end
